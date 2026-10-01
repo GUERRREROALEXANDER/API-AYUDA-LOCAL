@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "AyudaLocal - Users, Organizaciones y Categorias",
+    "name": "AyudaLocal - API completa",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Ejecutar las carpetas en orden. POST guarda el ID creado; PUT y DELETE usan ese ID. Los ejemplos iniciales permanecen disponibles."
   },
@@ -19,6 +19,10 @@
     },
     {
       "key": "categoriasId",
+      "value": "1"
+    },
+    {
+      "key": "reportesId",
       "value": "1"
     }
   ],
@@ -265,6 +269,186 @@
           "request": {
             "method": "DELETE",
             "url": "{{baseUrl}}/categorias/{{categoriasId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes"
+          }
+        },
+        {
+          "name": "Filtrar por estado",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes/estado/PENDIENTE"
+          }
+        },
+        {
+          "name": "Filtrar por categoria",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes/categoria/2"
+          }
+        },
+        {
+          "name": "Filtrar por barrio",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes/barrio/Centro"
+          }
+        },
+        {
+          "name": "Filtrar por prioridad",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes/prioridad/ALTA"
+          }
+        },
+        {
+          "name": "Consultar ejemplo 1",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes/1"
+          }
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reportes",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Falta de agua en el barrio\",\n  \"descripcion\": \"Tuberia rota frente al parque\",\n  \"categoriaId\": \"3\",\n  \"usuarioId\": \"1\",\n  \"barrio\": \"Centro\",\n  \"direccion\": \"Calle 10 #5-20\",\n  \"prioridad\": \"ALTA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Creado\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"reportesId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar creado",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/reportes/{{reportesId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Falta de agua en el barrio\",\n  \"descripcion\": \"Actualizado desde Postman\",\n  \"categoriaId\": \"3\",\n  \"barrio\": \"Centro\",\n  \"direccion\": \"Calle 10 #5-20\",\n  \"prioridad\": \"URGENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Asignar a organizacion",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/reportes/{{reportesId}}/asignar",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orgId\": \"1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reportes de usuario 1",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/1/reportes"
+          }
+        },
+        {
+          "name": "Reportes de organizacion 1",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/organizaciones/1/reportes"
+          }
+        },
+        {
+          "name": "Eliminar creado",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/reportes/{{reportesId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seguimientos",
+      "item": [
+        {
+          "name": "Listar de reporte 2",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reportes/2/seguimientos"
+          }
+        },
+        {
+          "name": "Crear con cambio de estado",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reportes/{{reportesId}}/seguimientos",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autorId\": \"1\",\n  \"nota\": \"Cuadrilla en camino\",\n  \"estadoNuevo\": \"EN_PROCESO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         }
       ]
