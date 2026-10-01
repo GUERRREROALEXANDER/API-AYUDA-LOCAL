@@ -1,0 +1,273 @@
+{
+  "info": {
+    "name": "AyudaLocal - Users, Organizaciones y Categorias",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar las carpetas en orden. POST guarda el ID creado; PUT y DELETE usan ese ID. Los ejemplos iniciales permanecen disponibles."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "usersId",
+      "value": "1"
+    },
+    {
+      "key": "organizacionesId",
+      "value": "1"
+    },
+    {
+      "key": "categoriasId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Consultar ejemplo 1",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/1"
+          }
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alexander Guerrero\",\n  \"email\": \"alexander@email.com\",\n  \"telefono\": \"3001234567\",\n  \"barrio\": \"Centro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Creado\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"usersId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar creado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{usersId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alexander Guerrero\",\n  \"email\": \"alexander@email.com\",\n  \"telefono\": \"3001234567\",\n  \"barrio\": \"Actualizado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar creado",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/{{usersId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizaciones",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/organizaciones"
+          }
+        },
+        {
+          "name": "Consultar ejemplo 1",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/organizaciones/1"
+          }
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/organizaciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Fundacion Ayuda Social\",\n  \"nit\": \"900123456\",\n  \"email\": \"contacto@fundacion.com\",\n  \"telefono\": \"3009876543\",\n  \"zona\": \"Centro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Creado\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"organizacionesId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar creado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/organizaciones/{{organizacionesId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Fundacion Ayuda Social\",\n  \"nit\": \"900123456\",\n  \"email\": \"contacto@fundacion.com\",\n  \"telefono\": \"3009876543\",\n  \"zona\": \"Actualizado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar creado",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/organizaciones/{{organizacionesId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorias",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/categorias"
+          }
+        },
+        {
+          "name": "Consultar ejemplo 1",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/categorias/1"
+          }
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categorias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Salud\",\n  \"descripcion\": \"Casos relacionados con apoyo en salud\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Creado\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"categoriasId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar creado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categorias/{{categoriasId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Salud\",\n  \"descripcion\": \"Actualizado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar creado",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/categorias/{{categoriasId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
