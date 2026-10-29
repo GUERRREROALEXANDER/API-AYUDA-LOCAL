@@ -1,9 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateReporteDto, UpdateReporteDto, AsignarReporteDto } from './reportes.dto';
 import { Reporte } from './reportes.model';
-
-const PRIORIDADES = ['BAJA', 'MEDIA', 'ALTA', 'URGENTE'];
-const ESTADOS = ['PENDIENTE', 'ASIGNADO', 'EN_PROCESO', 'RESUELTO', 'CERRADO', 'RECHAZADO'];
+import { ESTADOS, PRIORIDADES } from './reportes.constants';
 
 @Injectable()
 export class ReportesService {
