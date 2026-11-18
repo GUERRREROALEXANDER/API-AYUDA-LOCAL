@@ -248,6 +248,13 @@ test('Errores de base de datos y PATCH', async () => {
   try {
     // ID no numerico: 400 en vez de 500
     assert.equal((await request('GET', '/users/abc')).status, 400);
+    // Filtros con un valor fuera del enum: 400 con los valores permitidos
+    let bad = await request('GET', '/reportes/estado/NOPE');
+    assert.equal(bad.status, 400);
+    assert.match((await bad.json()).message, /PENDIENTE/);
+    bad = await request('GET', '/reportes/prioridad/nope');
+    assert.equal(bad.status, 400);
+    assert.match((await bad.json()).message, /URGENTE/);
     // Valor unico repetido: 409
     const users = await (await request('GET', '/users')).json();
     assert.equal((await request('POST', '/users', { ...cases[0].body, email: users[0].email })).status, 409);

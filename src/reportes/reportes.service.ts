@@ -127,6 +127,9 @@ export class ReportesService implements OnApplicationBootstrap {
   }
 
   findByEstado(estado: string): Promise<ReporteEntity[]> {
+    if (!ESTADOS.includes(estado)) {
+      throw new BadRequestException(`Estado invalido. Valores permitidos: ${ESTADOS.join(', ')}`);
+    }
     return this.reportesRepository.find({ where: { estado }, relations: ReportesService.RELATIONS });
   }
 
@@ -142,6 +145,9 @@ export class ReportesService implements OnApplicationBootstrap {
   }
 
   findByPrioridad(prioridad: string): Promise<ReporteEntity[]> {
+    if (!PRIORIDADES.includes(prioridad)) {
+      throw new BadRequestException(`Prioridad invalida. Valores permitidos: ${PRIORIDADES.join(', ')}`);
+    }
     return this.reportesRepository.find({ where: { prioridad }, relations: ReportesService.RELATIONS });
   }
 
