@@ -21,8 +21,8 @@ export class UsersController {
   }
 
   @Get(':id/reportes')
-  findReportes(@Param('id') id: string) {
-    this.usersService.findById(id);
+  async findReportes(@Param('id') id: string) {
+    await this.usersService.findById(id);
     return this.reportesService.findByUsuario(id);
   }
 
