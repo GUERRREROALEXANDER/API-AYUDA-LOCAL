@@ -21,8 +21,8 @@ export class OrganizacionesController {
   }
 
   @Get(':id/reportes')
-  findReportes(@Param('id') id: string) {
-    this.organizacionesService.findById(id);
+  async findReportes(@Param('id') id: string) {
+    await this.organizacionesService.findById(id);
     return this.reportesService.findByOrganizacion(id);
   }
 
