@@ -110,7 +110,7 @@ El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedad
 1. Iniciar la API.
 2. En Postman elegir Import y seleccionar `postman/AyudaLocal.postman_collection.json`.
 3. La variable `baseUrl` ya contiene `http://localhost:3000`.
-4. Ejecutar cada carpeta en orden: listar, filtrar, consultar, crear, actualizar, asignar, eliminar.
+4. Ejecutar cada carpeta en orden (o la colección completa con Run): listar, filtrar, consultar, crear, actualizar, asignar, eliminar. El reporte creado se elimina al final de la carpeta Seguimientos, después de registrarle un seguimiento.
 5. La petición POST guarda automáticamente el ID creado para las siguientes peticiones PUT y DELETE.
 6. Para probar manualmente usar Body → raw → JSON y Content-Type: application/json.
 

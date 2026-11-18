@@ -475,13 +475,6 @@
             "method": "GET",
             "url": "{{baseUrl}}/organizaciones/1/reportes"
           }
-        },
-        {
-          "name": "Eliminar creado",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/reportes/{{reportesId}}"
-          }
         }
       ]
     },
@@ -515,6 +508,13 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "Eliminar reporte creado",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/reportes/{{reportesId}}"
           }
         }
       ]
