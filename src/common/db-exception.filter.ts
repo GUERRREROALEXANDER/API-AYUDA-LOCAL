@@ -5,7 +5,7 @@ import { QueryFailedError } from 'typeorm';
 const PG_ERRORS: Record<string, { status: number; message: string }> = {
   '23503': { status: HttpStatus.CONFLICT, message: 'El registro tiene datos relacionados o referencia uno que no existe' },
   '23505': { status: HttpStatus.CONFLICT, message: 'Ya existe un registro con ese valor unico' },
-  '22P02': { status: HttpStatus.BAD_REQUEST, message: 'Identificador invalido' },
+  '22P02': { status: HttpStatus.BAD_REQUEST, message: 'Valor invalido: los IDs deben ser numericos' },
 };
 
 @Catch(QueryFailedError)
