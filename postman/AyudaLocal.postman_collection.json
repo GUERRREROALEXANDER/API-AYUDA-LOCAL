@@ -265,7 +265,7 @@
             "url": "{{baseUrl}}/categorias",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Salud\",\n  \"descripcion\": \"Casos relacionados con apoyo en salud\"\n}",
+              "raw": "{\n  \"nombre\": \"Movilidad\",\n  \"descripcion\": \"Casos relacionados con transporte y movilidad\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -299,7 +299,7 @@
             "url": "{{baseUrl}}/categorias/{{categoriasId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Salud\",\n  \"descripcion\": \"Actualizado desde Postman\"\n}",
+              "raw": "{\n  \"nombre\": \"Movilidad\",\n  \"descripcion\": \"Actualizado desde Postman\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
