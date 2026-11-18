@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateReporteDto, UpdateReporteDto, AsignarReporteDto } from './reportes.dto';
@@ -59,7 +59,7 @@ const SEED = [
 ];
 
 @Injectable()
-export class ReportesService implements OnModuleInit {
+export class ReportesService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(ReporteEntity)
     private readonly reportesRepository: Repository<ReporteEntity>,
@@ -71,8 +71,23 @@ export class ReportesService implements OnModuleInit {
     private readonly organizacionesRepository: Repository<OrganizacionEntity>,
   ) {}
 
+  private seeding?: Promise<void>;
+
+  // Se siembra en onApplicationBootstrap (no onModuleInit): Nest ejecuta los
+  // onModuleInit en paralelo, y los reportes necesitan que categorias, users y
+  // organizaciones ya existan para no violar las llaves foraneas.
+  onApplicationBootstrap() {
+    return this.seedOnce();
+  }
+
+  // Memoizado: SeguimientosService lo espera antes de sembrar sus filas.
+  seedOnce(): Promise<void> {
+    this.seeding ??= this.seed();
+    return this.seeding;
+  }
+
   // Siembra los datos de demostracion la primera vez que la tabla esta vacia.
-  async onModuleInit() {
+  private async seed() {
     const count = await this.reportesRepository.count();
     if (count === 0) {
       for (const seed of SEED) {
