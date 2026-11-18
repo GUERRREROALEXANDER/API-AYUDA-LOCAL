@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { ReportesService } from '../reportes/reportes.service';
 import { OrganizacionesService } from './organizaciones.service';
-import { CreateOrganizacionDto, UpdateOrganizacionDto } from './organizaciones.dto';
+import { CreateOrganizacionDto, UpdateOrganizacionDto, PatchOrganizacionDto } from './organizaciones.dto';
 
 @Controller('organizaciones')
 export class OrganizacionesController {
@@ -21,8 +21,8 @@ export class OrganizacionesController {
   }
 
   @Get(':id/reportes')
-  findReportes(@Param('id') id: string) {
-    this.organizacionesService.findById(id);
+  async findReportes(@Param('id') id: string) {
+    await this.organizacionesService.findById(id);
     return this.reportesService.findByOrganizacion(id);
   }
 
@@ -33,6 +33,11 @@ export class OrganizacionesController {
 
   @Put(':id')
   update(@Param('id') id: string, @Body() data: UpdateOrganizacionDto) {
+    return this.organizacionesService.update(id, data);
+  }
+
+  @Patch(':id')
+  patch(@Param('id') id: string, @Body() data: PatchOrganizacionDto) {
     return this.organizacionesService.update(id, data);
   }
 

@@ -4,18 +4,29 @@ Integrantes: Nicolas Casanova y Alexander Guerrero.
 
 API para apoyar la atención de necesidades de la comunidad. Ciudadanos reportan necesidades; organizaciones sociales las atienden y registran el seguimiento.
 
+## Base de datos
+
+Los cinco recursos (`Users`, `Organizaciones`, `Categorias`, `Reportes` y `Seguimientos`) persisten en PostgreSQL con TypeORM (entidades en `entities/`).
+
+```powershell
+cp .env.example .env   # completar con los valores de docker-compose.yml
+docker compose up -d   # Postgres 17 en el puerto 5432 + pgAdmin en 5050
+```
+
+`TypeOrmModule` usa `autoLoadEntities` y `synchronize: true`, así que las tablas se crean solas al arrancar la API. Cada Service siembra sus datos de demostración una sola vez, la primera vez que su tabla está vacía (no se repiten en cada reinicio). Reportes y Seguimientos siembran en `onApplicationBootstrap` porque Nest ejecuta los `onModuleInit` en paralelo y dependen de filas ya creadas por otros módulos.
+
 ## Ejecutar
 
 ```powershell
-cd "D:\Escritorio\Api Servicio Local"
 npm install
 npm run build
 npm run start:dev
 ```
 
 Base URL: http://localhost:3000. Para ejecutar lo compilado: `npm run start:prod`.
-Los datos están en arreglos privados de cada Service y vuelven a sus valores iniciales al reiniciar.
-Hay 12 ciudadanos (IDs 1-12), 8 organizaciones (IDs 1-8), 8 categorías iniciales (IDs 1-8) y 4 reportes iniciales (IDs 1-4) con 2 seguimientos de ejemplo. Los registros son datos de demostración ficticios. Los IDs son cadenas numéricas; todos los recursos tienen un ejemplo con ID `1`.
+`Users`, `Organizaciones`, `Categorias` y `Reportes` quedan guardados en Postgres: sus IDs son numéricos y los datos sobreviven a reinicios de la API (se siembran una sola vez). Un Reporte devuelve su `categoria`, `usuario` y `organizacion` como objetos completos (relaciones TypeORM), no solo el ID.
+`Seguimientos` también queda en Postgres; cada uno devuelve su `autor` (la organización) como objeto completo.
+Hay 12 ciudadanos, 8 organizaciones, 8 categorías y 4 reportes iniciales (IDs autogenerados por Postgres, empiezan en 1), además de 2 seguimientos de ejemplo. Los registros son datos de demostración ficticios.
 
 ## Estructura
 
@@ -28,31 +39,33 @@ src/
     users.controller.ts
     users.service.ts
     users.dto.ts
-    users.model.ts
+    entities/user.entity.ts
   organizaciones/
     organizaciones.module.ts
     organizaciones.controller.ts
     organizaciones.service.ts
     organizaciones.dto.ts
-    organizaciones.model.ts
+    entities/organizacion.entity.ts
   categorias/
     categorias.module.ts
     categorias.controller.ts
     categorias.service.ts
     categorias.dto.ts
-    categorias.model.ts
+    entities/categoria.entity.ts
   reportes/
     reportes.module.ts
     reportes.controller.ts
     reportes.service.ts
     reportes.dto.ts
-    reportes.model.ts
+    entities/reporte.entity.ts
   seguimientos/
     seguimientos.module.ts
     seguimientos.controller.ts
     seguimientos.service.ts
     seguimientos.dto.ts
-    seguimientos.model.ts
+    entities/seguimiento.entity.ts
+  common/
+    db-exception.filter.ts
 postman/AyudaLocal.postman_collection.json
 test/api.test.cjs
 ```
@@ -67,15 +80,16 @@ El Controller usa `@Controller`, `@Get`, `@Post`, `@Put`, `@Delete`, `@Body` y `
 Cada Service usa `@Injectable()` y tiene `findAll()`, `findById(id)`, `create(data)`, `update(id, data)` y `delete(id)`.
 ReportesService suma `findByEstado`, `findByCategoria`, `findByBarrio`, `findByPrioridad`, `findByUsuario`, `findByOrganizacion`, `asignar(id, orgId)` y `cambiarEstado(id, estado)`.
 SeguimientosService tiene `findByReporte(reporteId)` y `create(reporteId, dto)`; cada seguimiento guarda el estado anterior y cambia el reporte al estado nuevo.
-La lógica y los arreglos privados están en los Services; los modelos describen los datos y los DTO validan las entradas.
+La lógica está en los Services. En los cinco recursos la entidad TypeORM describe los datos, y el Service usa su `Repository` (`find`, `findOneBy`/`findOne`, `save`, `remove`) en vez de un arreglo. Los DTO validan las entradas en ambos casos.
+ReportesService además valida que `categoriaId`, `usuarioId` y `orgId` existan (`NotFoundException` si no) antes de guardar la relación, inyectando los repositorios de `CategoriaEntity`, `UserEntity` y `OrganizacionEntity` directamente (no los módulos completos, para no crear un ciclo con `UsersModule`/`OrganizacionesModule`, que ya importan `ReportesModule`).
 
 ## Endpoints
 
 | Recurso | Listar | Consultar | Crear | Actualizar | Eliminar |
 | --- | --- | --- | --- | --- | --- |
-| Users | GET /users | GET /users/:id | POST /users | PUT /users/:id | DELETE /users/:id |
-| Organizaciones | GET /organizaciones | GET /organizaciones/:id | POST /organizaciones | PUT /organizaciones/:id | DELETE /organizaciones/:id |
-| Categorias | GET /categorias | GET /categorias/:id | POST /categorias | PUT /categorias/:id | DELETE /categorias/:id |
+| Users | GET /users | GET /users/:id | POST /users | PUT / PATCH /users/:id | DELETE /users/:id |
+| Organizaciones | GET /organizaciones | GET /organizaciones/:id | POST /organizaciones | PUT / PATCH /organizaciones/:id | DELETE /organizaciones/:id |
+| Categorias | GET /categorias | GET /categorias/:id | POST /categorias | PUT / PATCH /categorias/:id | DELETE /categorias/:id |
 | Reportes | GET /reportes | GET /reportes/:id | POST /reportes | PUT /reportes/:id | DELETE /reportes/:id |
 | Seguimientos | GET /reportes/:id/seguimientos | — | POST /reportes/:id/seguimientos | — | — |
 
@@ -83,10 +97,12 @@ Extras: `GET /reportes/estado/:estado`, `GET /reportes/categoria/:categoriaId`, 
 
 Estados: `PENDIENTE · ASIGNADO · EN_PROCESO · RESUELTO · CERRADO · RECHAZADO`. Prioridades: `BAJA · MEDIA · ALTA · URGENTE`.
 Ciclo de vida: `PENDIENTE --PUT /asignar--> ASIGNADO --POST /seguimientos--> EN_PROCESO --> RESUELTO --> CERRADO`, con `RECHAZADO` para duplicado/no aplica. Cada seguimiento deja historial del cambio de estado.
+La API lo hace cumplir (`TRANSICIONES` en `reportes.constants.ts`): cualquier estado abierto puede pasar a `RECHAZADO`, `RESUELTO` puede volver a `EN_PROCESO` si la solución falló, y `CERRADO`/`RECHAZADO` son finales. Un salto no permitido (p. ej. `PENDIENTE → CERRADO` o reabrir un caso cerrado) devuelve 409 y no deja seguimiento. Repetir el estado actual sirve para dejar solo una nota.
 
 GET y PUT devuelven objetos o arreglos JSON; POST devuelve 201 y el objeto creado.
 DELETE devuelve 200 y un mensaje. Un ID inexistente devuelve 404 mediante NotFoundException.
-Bodies incorrectos devuelven 400 mediante ValidationPipe. PUT requiere todos los campos editables.
+Bodies incorrectos devuelven 400 mediante ValidationPipe. PUT requiere todos los campos editables; PATCH (users, organizaciones, categorias) acepta cualquier subconjunto de ellos.
+`DbExceptionFilter` traduce errores de Postgres: valor único repetido (email, nit, nombre de categoría) → 409; borrar un registro con datos relacionados (p. ej. una organización con seguimientos) → 409; ID no numérico (`/users/abc`) → 400.
 El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedades desconocidas.
 
 ## Postman
@@ -94,7 +110,7 @@ El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedad
 1. Iniciar la API.
 2. En Postman elegir Import y seleccionar `postman/AyudaLocal.postman_collection.json`.
 3. La variable `baseUrl` ya contiene `http://localhost:3000`.
-4. Ejecutar cada carpeta en orden: listar, filtrar, consultar, crear, actualizar, asignar, eliminar.
+4. Ejecutar cada carpeta en orden (o la colección completa con Run): listar, filtrar, consultar, crear, actualizar, asignar, eliminar. El reporte creado se elimina al final de la carpeta Seguimientos, después de registrarle un seguimiento.
 5. La petición POST guarda automáticamente el ID creado para las siguientes peticiones PUT y DELETE.
 6. Para probar manualmente usar Body → raw → JSON y Content-Type: application/json.
 
@@ -125,10 +141,12 @@ El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedad
 
 ```json
 {
-  "nombre": "Salud",
-  "descripcion": "Casos relacionados con apoyo en salud"
+  "nombre": "Movilidad",
+  "descripcion": "Casos relacionados con transporte y movilidad"
 }
 ```
+
+`nombre` es único: no puede repetir una categoría ya sembrada (Alimentos, Persona vulnerable, Infraestructura, Ayuda general, Salud, Educacion, Vivienda, Ropa y abrigo).
 
 ### POST /reportes
 
@@ -145,6 +163,7 @@ El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedad
 ```
 
 Sin `prioridad` válida (`BAJA · MEDIA · ALTA · URGENTE`) la API devuelve 400. El `estado` inicial siempre es `PENDIENTE`.
+`categoriaId` y `usuarioId` deben existir: si no, la API devuelve 404 antes de guardar el reporte. La respuesta trae `categoria`, `usuario` y (si ya se asignó) `organizacion` como objetos completos, no solo su ID.
 
 ### PUT /reportes/:id/asignar
 
@@ -170,6 +189,7 @@ Ejemplos de lectura: `GET http://localhost:3000/users`, `GET http://localhost:30
 
 `npm run build` compila NestJS.
 `npm test` compila y prueba por HTTP el CRUD de los cinco módulos, filtros de reportes, asignar, seguimientos con cambio de estado, rutas anidadas, datos iniciales, errores 404 y validación 400. Utiliza un puerto temporal y no modifica la API del puerto 3000.
+Como Users, Organizaciones, Categorias y Reportes ahora usan Postgres, `npm test` necesita `docker compose up -d` y el archivo `.env` configurados antes de correr.
 
 ## Referencia estudiada
 
