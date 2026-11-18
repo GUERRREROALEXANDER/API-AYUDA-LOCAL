@@ -1,4 +1,5 @@
-import { IsString, Matches } from 'class-validator';
+import { IsIn, IsString, Matches } from 'class-validator';
+import { ESTADOS } from '../reportes/reportes.constants';
 
 // Los DTO validan el body antes de llamar al Service.
 export class CreateSeguimientoDto {
@@ -6,6 +7,6 @@ export class CreateSeguimientoDto {
   autorId: string;
   @IsString() @Matches(/\S/)
   nota: string;
-  @IsString() @Matches(/\S/)
+  @IsIn(ESTADOS)
   estadoNuevo: string;
 }
