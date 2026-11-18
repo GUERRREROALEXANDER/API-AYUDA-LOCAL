@@ -261,6 +261,14 @@ test('Errores de base de datos y PATCH', async () => {
     // Borrar una organizacion con seguimientos/reportes: 409
     assert.equal((await request('DELETE', '/organizaciones/1')).status, 409);
 
+    // IDs numericos en el body se aceptan igual que los de texto
+    let res0 = await request('POST', '/reportes', { ...reporteBase, categoriaId: 1, usuarioId: 1 });
+    assert.equal(res0.status, 201);
+    const repNum = await res0.json();
+    assert.equal((await request('PUT', '/reportes/' + repNum.id + '/asignar', { orgId: 1 })).status, 200);
+    assert.equal((await request('POST', '/reportes/' + repNum.id + '/seguimientos', { autorId: 1, nota: 'x', estadoNuevo: 'EN_PROCESO' })).status, 201);
+    assert.equal((await request('DELETE', '/reportes/' + repNum.id)).status, 200);
+
     // PATCH parcial: solo cambia lo enviado
     let res = await request('POST', '/users', { ...cases[0].body, email: 'patch.prueba@example.com' });
     const created = await res.json();

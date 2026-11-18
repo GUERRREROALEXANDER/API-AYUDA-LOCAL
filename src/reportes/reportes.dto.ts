@@ -1,4 +1,5 @@
 import { IsString, Matches } from 'class-validator';
+import { IdToString } from '../common/id-to-string.decorator';
 
 // Los DTO validan el body antes de llamar al Service.
 export class CreateReporteDto {
@@ -6,8 +7,10 @@ export class CreateReporteDto {
   titulo: string;
   @IsString() @Matches(/\S/)
   descripcion: string;
+  @IdToString()
   @IsString() @Matches(/\S/)
   categoriaId: string;
+  @IdToString()
   @IsString() @Matches(/\S/)
   usuarioId: string;
   @IsString() @Matches(/\S/)
@@ -24,6 +27,7 @@ export class UpdateReporteDto {
   titulo: string;
   @IsString() @Matches(/\S/)
   descripcion: string;
+  @IdToString()
   @IsString() @Matches(/\S/)
   categoriaId: string;
   @IsString() @Matches(/\S/)
@@ -34,6 +38,7 @@ export class UpdateReporteDto {
   prioridad: string;
 }
 export class AsignarReporteDto {
+  @IdToString()
   @IsString() @Matches(/\S/)
   orgId: string;
 }
