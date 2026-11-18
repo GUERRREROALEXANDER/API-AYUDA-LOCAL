@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_FILTER } from '@nestjs/core';
+import { DbExceptionFilter } from './common/db-exception.filter';
 import { Env } from './env.model';
 import { UsersModule } from './users/users.module';
 import { OrganizacionesModule } from './organizaciones/organizaciones.module';
@@ -27,5 +29,7 @@ import { SeguimientosModule } from './seguimientos/seguimientos.module';
     }),
     UsersModule, OrganizacionesModule, CategoriasModule, ReportesModule, SeguimientosModule,
   ],
+  // Global: aplica tambien al crear la app en las pruebas, sin tocar main.ts.
+  providers: [{ provide: APP_FILTER, useClass: DbExceptionFilter }],
 })
 export class AppModule {}
