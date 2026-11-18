@@ -4,6 +4,17 @@ Integrantes: Nicolas Casanova y Alexander Guerrero.
 
 API para apoyar la atención de necesidades de la comunidad. Ciudadanos reportan necesidades; organizaciones sociales las atienden y registran el seguimiento.
 
+## Base de datos
+
+`Users`, `Organizaciones` y `Categorias` persisten en PostgreSQL con TypeORM (entidades en `entities/`). `Reportes` y `Seguimientos` siguen en arreglos en memoria mientras se completa su migración a TypeORM.
+
+```powershell
+cp .env.example .env   # completar con los valores de docker-compose.yml
+docker compose up -d   # Postgres 17 en el puerto 5432 + pgAdmin en 5050
+```
+
+`TypeOrmModule` usa `autoLoadEntities` y `synchronize: true`, así que las tablas se crean solas al arrancar la API. Cada Service siembra sus datos de demostración una sola vez, la primera vez que su tabla está vacía (no se repiten en cada reinicio).
+
 ## Ejecutar
 
 ```powershell
@@ -14,8 +25,9 @@ npm run start:dev
 ```
 
 Base URL: http://localhost:3000. Para ejecutar lo compilado: `npm run start:prod`.
-Los datos están en arreglos privados de cada Service y vuelven a sus valores iniciales al reiniciar.
-Hay 12 ciudadanos (IDs 1-12), 8 organizaciones (IDs 1-8), 8 categorías iniciales (IDs 1-8) y 4 reportes iniciales (IDs 1-4) con 2 seguimientos de ejemplo. Los registros son datos de demostración ficticios. Los IDs son cadenas numéricas; todos los recursos tienen un ejemplo con ID `1`.
+`Users`, `Organizaciones` y `Categorias` quedan guardados en Postgres: sus IDs son numéricos y los datos sobreviven a reinicios de la API (se siembran una sola vez).
+`Reportes` y `Seguimientos` siguen en arreglos privados de cada Service y vuelven a sus valores iniciales al reiniciar.
+Hay 12 ciudadanos, 8 organizaciones y 8 categorías iniciales (IDs autogenerados por Postgres, empiezan en 1), además de 4 reportes iniciales (IDs 1-4) con 2 seguimientos de ejemplo. Los registros son datos de demostración ficticios.
 
 ## Estructura
 
@@ -28,19 +40,19 @@ src/
     users.controller.ts
     users.service.ts
     users.dto.ts
-    users.model.ts
+    entities/user.entity.ts
   organizaciones/
     organizaciones.module.ts
     organizaciones.controller.ts
     organizaciones.service.ts
     organizaciones.dto.ts
-    organizaciones.model.ts
+    entities/organizacion.entity.ts
   categorias/
     categorias.module.ts
     categorias.controller.ts
     categorias.service.ts
     categorias.dto.ts
-    categorias.model.ts
+    entities/categoria.entity.ts
   reportes/
     reportes.module.ts
     reportes.controller.ts
@@ -67,7 +79,7 @@ El Controller usa `@Controller`, `@Get`, `@Post`, `@Put`, `@Delete`, `@Body` y `
 Cada Service usa `@Injectable()` y tiene `findAll()`, `findById(id)`, `create(data)`, `update(id, data)` y `delete(id)`.
 ReportesService suma `findByEstado`, `findByCategoria`, `findByBarrio`, `findByPrioridad`, `findByUsuario`, `findByOrganizacion`, `asignar(id, orgId)` y `cambiarEstado(id, estado)`.
 SeguimientosService tiene `findByReporte(reporteId)` y `create(reporteId, dto)`; cada seguimiento guarda el estado anterior y cambia el reporte al estado nuevo.
-La lógica y los arreglos privados están en los Services; los modelos describen los datos y los DTO validan las entradas.
+La lógica está en los Services. En Reportes y Seguimientos los arreglos privados describen los datos; en Users, Organizaciones y Categorias esa responsabilidad la tiene la entidad TypeORM, y el Service usa su `Repository` (`find`, `findOneBy`, `save`, `remove`) en vez de un arreglo. Los DTO validan las entradas en ambos casos.
 
 ## Endpoints
 
@@ -125,10 +137,12 @@ El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedad
 
 ```json
 {
-  "nombre": "Salud",
-  "descripcion": "Casos relacionados con apoyo en salud"
+  "nombre": "Movilidad",
+  "descripcion": "Casos relacionados con transporte y movilidad"
 }
 ```
+
+`nombre` es único: no puede repetir una categoría ya sembrada (Alimentos, Persona vulnerable, Infraestructura, Ayuda general, Salud, Educacion, Vivienda, Ropa y abrigo).
 
 ### POST /reportes
 
@@ -170,6 +184,7 @@ Ejemplos de lectura: `GET http://localhost:3000/users`, `GET http://localhost:30
 
 `npm run build` compila NestJS.
 `npm test` compila y prueba por HTTP el CRUD de los cinco módulos, filtros de reportes, asignar, seguimientos con cambio de estado, rutas anidadas, datos iniciales, errores 404 y validación 400. Utiliza un puerto temporal y no modifica la API del puerto 3000.
+Como Users, Organizaciones y Categorias ahora usan Postgres, `npm test` necesita `docker compose up -d` y el archivo `.env` configurados antes de correr.
 
 ## Referencia estudiada
 

@@ -7,7 +7,7 @@ const { AppModule } = require('../dist/app.module');
 const cases = [
   { path: 'users', count: 12, body: { name: 'Alexander Guerrero', email: 'alexander@email.com', telefono: '3001234567', barrio: 'Centro' } },
   { path: 'organizaciones', count: 8, body: { nombre: 'Fundacion Ayuda Social', nit: '900123456', email: 'contacto@fundacion.com', telefono: '3009876543', zona: 'Centro' } },
-  { path: 'categorias', count: 8, body: { nombre: 'Salud', descripcion: 'Casos relacionados con apoyo en salud' } },
+  { path: 'categorias', count: 8, body: { nombre: 'Movilidad', descripcion: 'Casos relacionados con transporte y movilidad' } },
 ];
 
 const reporteBase = {
@@ -20,7 +20,7 @@ const reporteBase = {
   prioridad: 'MEDIA',
 };
 
-test('CRUD HTTP base, validacion y errores', async () => {
+test('CRUD HTTP base, validacion y errores (Postgres: users, organizaciones, categorias)', async () => {
   const app = await NestFactory.create(AppModule, { logger: false });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   await app.listen(0, '127.0.0.1');
@@ -31,12 +31,18 @@ test('CRUD HTTP base, validacion y errores', async () => {
   });
   try {
     for (const c of cases) {
+      // Los datos viven en Postgres y se siembran una sola vez: el conteo y el
+      // primer registro se leen en vivo en lugar de asumir un ID fijo '1'.
       let res = await request('GET', '/' + c.path);
       assert.equal(res.status, 200);
-      assert.equal((await res.json()).length, c.count);
-      res = await request('GET', '/' + c.path + '/1');
+      const initial = await res.json();
+      assert.equal(initial.length, c.count);
+      const firstId = initial[0].id;
+
+      res = await request('GET', '/' + c.path + '/' + firstId);
       assert.equal(res.status, 200);
-      assert.equal((await res.json()).id, '1');
+      assert.equal((await res.json()).id, firstId);
+
       for (const method of ['GET', 'PUT', 'DELETE']) {
         res = await request(method, '/' + c.path + '/99999', method === 'PUT' ? c.body : undefined);
         assert.equal(res.status, 404);
@@ -47,20 +53,35 @@ test('CRUD HTTP base, validacion y errores', async () => {
       if (c.body.email) {
         assert.equal((await request('POST', '/' + c.path, { ...c.body, email: 'incorrecto' })).status, 400);
       }
+
       res = await request('POST', '/' + c.path, c.body);
       assert.equal(res.status, 201);
       const created = await res.json();
       assert.ok(created.id);
-      assert.notEqual(created.id, '1');
+      assert.notEqual(created.id, firstId);
+      assert.ok(created.createdAt);
+
       const changes = { ...c.body, [Object.keys(c.body)[0]]: 'Cambio probado' };
       res = await request('PUT', '/' + c.path + '/' + created.id, changes);
       assert.equal(res.status, 200);
-      assert.deepEqual(await res.json(), { ...changes, id: created.id });
+      const updated = await res.json();
+      assert.equal(updated.id, created.id);
+      for (const key of Object.keys(changes)) {
+        assert.equal(updated[key], changes[key]);
+      }
       assert.equal((await request('PUT', '/' + c.path + '/' + created.id, {})).status, 400);
       assert.equal((await request('DELETE', '/' + c.path + '/' + created.id)).status, 200);
       assert.equal((await request('GET', '/' + c.path + '/' + created.id)).status, 404);
+
+      // Segundo registro de prueba: confirma que el ID no se reutiliza y
+      // limpia su propio rastro para que el conteo quede igual que al inicio.
       res = await request('POST', '/' + c.path, c.body);
-      assert.notEqual((await res.json()).id, created.id);
+      const created2 = await res.json();
+      assert.notEqual(created2.id, created.id);
+      assert.equal((await request('DELETE', '/' + c.path + '/' + created2.id)).status, 200);
+
+      res = await request('GET', '/' + c.path);
+      assert.equal((await res.json()).length, c.count);
     }
   } finally {
     await app.close();
