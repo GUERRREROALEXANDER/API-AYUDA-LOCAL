@@ -219,13 +219,52 @@ test('Seguimientos: historial y cambio de estado', async () => {
     assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x' })).status, 400);
     assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x', estadoNuevo: 'NOPE' })).status, 400);
     assert.equal((await request('POST', '/reportes/99999/seguimientos', { autorId: '1', nota: 'x', estadoNuevo: 'ASIGNADO' })).status, 404);
+    // Autor inexistente: 404 y el estado del reporte no cambia
+    assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '99999', nota: 'x', estadoNuevo: 'CERRADO' })).status, 404);
+    assert.equal((await (await request('GET', `/reportes/${rep.id}`)).json()).estado, 'EN_PROCESO');
 
     res = await request('GET', `/reportes/${rep.id}/seguimientos`);
-    assert.equal((await res.json()).length, 2);
+    const historial = await res.json();
+    assert.equal(historial.length, 2);
+    assert.equal(historial[0].autor.id, 1);
 
     // Reportes ya persiste en Postgres: se borra el reporte de prueba para no
     // dejar un registro de mas en cada corrida.
     assert.equal((await request('DELETE', `/reportes/${rep.id}`)).status, 200);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Errores de base de datos y PATCH', async () => {
+  const app = await NestFactory.create(AppModule, { logger: false });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  await app.listen(0, '127.0.0.1');
+  const base = await app.getUrl();
+  const request = (method, path, body) => fetch(base + path, {
+    method, headers: { 'Content-Type': 'application/json' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  try {
+    // ID no numerico: 400 en vez de 500
+    assert.equal((await request('GET', '/users/abc')).status, 400);
+    // Valor unico repetido: 409
+    const users = await (await request('GET', '/users')).json();
+    assert.equal((await request('POST', '/users', { ...cases[0].body, email: users[0].email })).status, 409);
+    // Borrar una organizacion con seguimientos/reportes: 409
+    assert.equal((await request('DELETE', '/organizaciones/1')).status, 409);
+
+    // PATCH parcial: solo cambia lo enviado
+    let res = await request('POST', '/users', { ...cases[0].body, email: 'patch.prueba@example.com' });
+    const created = await res.json();
+    res = await request('PATCH', '/users/' + created.id, { telefono: '3109998877' });
+    assert.equal(res.status, 200);
+    const patched = await res.json();
+    assert.equal(patched.telefono, '3109998877');
+    assert.equal(patched.name, created.name);
+    assert.equal((await request('PATCH', '/users/' + created.id, { email: 'no-es-email' })).status, 400);
+    assert.equal((await request('PATCH', '/users/99999', { telefono: '1' })).status, 404);
+    assert.equal((await request('DELETE', '/users/' + created.id)).status, 200);
   } finally {
     await app.close();
   }
