@@ -46,7 +46,7 @@ export class CategoriasService implements OnModuleInit {
     return this.categoriasRepository.save(this.categoriasRepository.create(data));
   }
 
-  async update(id: string, data: UpdateCategoriaDto): Promise<CategoriaEntity> {
+  async update(id: string, data: Partial<UpdateCategoriaDto>): Promise<CategoriaEntity> {
     const item = await this.findById(id);
     Object.assign(item, data);
     return this.categoriasRepository.save(item);

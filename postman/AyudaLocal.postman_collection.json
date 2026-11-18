@@ -101,6 +101,28 @@
           }
         },
         {
+          "name": "Actualizar parcial (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{usersId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"3109998877\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "Eliminar creado",
           "request": {
             "method": "DELETE",
@@ -183,6 +205,28 @@
           }
         },
         {
+          "name": "Actualizar parcial (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/organizaciones/{{organizacionesId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zona\": \"Zona parcial\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "Eliminar creado",
           "request": {
             "method": "DELETE",
@@ -256,6 +300,28 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Salud\",\n  \"descripcion\": \"Actualizado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar parcial (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/categorias/{{categoriasId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Descripcion parcial desde Postman\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
