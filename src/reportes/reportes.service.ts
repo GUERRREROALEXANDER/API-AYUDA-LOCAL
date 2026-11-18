@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateReporteDto, UpdateReporteDto, AsignarReporteDto } from './reportes.dto';
@@ -6,7 +6,7 @@ import { ReporteEntity } from './entities/reporte.entity';
 import { CategoriaEntity } from '../categorias/entities/categoria.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { OrganizacionEntity } from '../organizaciones/entities/organizacion.entity';
-import { ESTADOS, PRIORIDADES } from './reportes.constants';
+import { ESTADOS, PRIORIDADES, TRANSICIONES } from './reportes.constants';
 
 // Datos de demostracion: referencian los mismos IDs que siembran Categorias, Users
 // y Organizaciones (1..N en el mismo orden), asi que solo tienen sentido sobre una
@@ -235,6 +235,13 @@ export class ReportesService implements OnApplicationBootstrap {
     const item = await this.findById(id);
     if (!ESTADOS.includes(estado)) {
       throw new BadRequestException('Estado invalido');
+    }
+    const permitidos = TRANSICIONES[item.estado];
+    const mismoEstado = estado === item.estado && permitidos.length > 0;
+    if (!mismoEstado && !permitidos.includes(estado)) {
+      throw new ConflictException(
+        `Transicion invalida: ${item.estado} -> ${estado}. Permitidas: ${permitidos.join(', ') || 'ninguna (estado final)'}`,
+      );
     }
     item.estado = estado;
     return this.reportesRepository.save(item);

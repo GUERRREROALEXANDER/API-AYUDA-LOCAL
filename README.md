@@ -97,6 +97,7 @@ Extras: `GET /reportes/estado/:estado`, `GET /reportes/categoria/:categoriaId`, 
 
 Estados: `PENDIENTE · ASIGNADO · EN_PROCESO · RESUELTO · CERRADO · RECHAZADO`. Prioridades: `BAJA · MEDIA · ALTA · URGENTE`.
 Ciclo de vida: `PENDIENTE --PUT /asignar--> ASIGNADO --POST /seguimientos--> EN_PROCESO --> RESUELTO --> CERRADO`, con `RECHAZADO` para duplicado/no aplica. Cada seguimiento deja historial del cambio de estado.
+La API lo hace cumplir (`TRANSICIONES` en `reportes.constants.ts`): cualquier estado abierto puede pasar a `RECHAZADO`, `RESUELTO` puede volver a `EN_PROCESO` si la solución falló, y `CERRADO`/`RECHAZADO` son finales. Un salto no permitido (p. ej. `PENDIENTE → CERRADO` o reabrir un caso cerrado) devuelve 409 y no deja seguimiento. Repetir el estado actual sirve para dejar solo una nota.
 
 GET y PUT devuelven objetos o arreglos JSON; POST devuelve 201 y el objeto creado.
 DELETE devuelve 200 y un mensaje. Un ID inexistente devuelve 404 mediante NotFoundException.
