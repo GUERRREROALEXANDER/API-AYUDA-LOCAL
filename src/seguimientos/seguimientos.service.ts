@@ -30,15 +30,15 @@ export class SeguimientosService {
 
   constructor(private readonly reportesService: ReportesService) {}
 
-  findByReporte(reporteId: string): Seguimiento[] {
-    this.reportesService.findById(reporteId);
+  async findByReporte(reporteId: string): Promise<Seguimiento[]> {
+    await this.reportesService.findById(reporteId);
     return this.seguimientos.filter((s) => s.reporteId === reporteId);
   }
 
-  create(reporteId: string, data: CreateSeguimientoDto): Seguimiento {
-    const reporte = this.reportesService.findById(reporteId);
+  async create(reporteId: string, data: CreateSeguimientoDto): Promise<Seguimiento> {
+    const reporte = await this.reportesService.findById(reporteId);
     const estadoAnterior = reporte.estado;
-    this.reportesService.cambiarEstado(reporteId, data.estadoNuevo);
+    await this.reportesService.cambiarEstado(reporteId, data.estadoNuevo);
     const item: Seguimiento = {
       ...data,
       id: String(this.nextId++),
