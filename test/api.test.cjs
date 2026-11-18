@@ -98,30 +98,39 @@ test('Reportes: CRUD, filtros, asignar y rutas anidadas', async () => {
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   try {
+    // Reportes vive en Postgres y se siembra una sola vez: se lee el conteo y
+    // el primer registro en vivo en lugar de asumir un ID fijo '1'.
     let res = await request('GET', '/reportes');
     assert.equal(res.status, 200);
-    assert.equal((await res.json()).length, 4);
+    const initial = await res.json();
+    const initialCount = initial.length;
+    const first = initial[0];
+    assert.ok(first.categoria?.id);
+    assert.ok(first.usuario?.id);
 
-    res = await request('GET', '/reportes/1');
+    res = await request('GET', '/reportes/' + first.id);
     assert.equal(res.status, 200);
-    assert.equal((await res.json()).id, '1');
+    assert.equal((await res.json()).id, first.id);
     assert.equal((await request('GET', '/reportes/99999')).status, 404);
 
-    // Filtros por rutas fijas (van antes de ':id')
-    res = await request('GET', '/reportes/estado/PENDIENTE');
+    // Filtros por rutas fijas (van antes de ':id'). Cada reporte trae la
+    // categoria/usuario/organizacion completas, no solo su ID.
+    res = await request('GET', '/reportes/estado/' + first.estado);
     assert.equal(res.status, 200);
-    assert.ok((await res.json()).every((r) => r.estado === 'PENDIENTE'));
-    res = await request('GET', '/reportes/categoria/1');
-    assert.ok((await res.json()).every((r) => r.categoriaId === '1'));
-    res = await request('GET', '/reportes/barrio/Centro');
-    assert.ok((await res.json()).every((r) => r.barrio === 'Centro'));
-    res = await request('GET', '/reportes/prioridad/ALTA');
-    assert.ok((await res.json()).every((r) => r.prioridad === 'ALTA'));
+    assert.ok((await res.json()).every((r) => r.estado === first.estado));
+    res = await request('GET', '/reportes/categoria/' + first.categoria.id);
+    assert.ok((await res.json()).every((r) => r.categoria.id === first.categoria.id));
+    res = await request('GET', '/reportes/barrio/' + first.barrio);
+    assert.ok((await res.json()).every((r) => r.barrio === first.barrio));
+    res = await request('GET', '/reportes/prioridad/' + first.prioridad);
+    assert.ok((await res.json()).every((r) => r.prioridad === first.prioridad));
 
     // Validacion 400
     assert.equal((await request('POST', '/reportes', {})).status, 400);
     assert.equal((await request('POST', '/reportes', { ...reporteBase, id: 'x' })).status, 400);
     assert.equal((await request('POST', '/reportes', { ...reporteBase, prioridad: 'NOPE' })).status, 400);
+    assert.equal((await request('POST', '/reportes', { ...reporteBase, categoriaId: '99999' })).status, 404);
+    assert.equal((await request('POST', '/reportes', { ...reporteBase, usuarioId: '99999' })).status, 404);
     assert.equal((await request('POST', '/reportes', {
       titulo: 'Sin prioridad', descripcion: 'Falta prioridad',
       categoriaId: '2', usuarioId: '1', barrio: 'Centro', direccion: 'Calle 2',
@@ -133,6 +142,7 @@ test('Reportes: CRUD, filtros, asignar y rutas anidadas', async () => {
     const created = await res.json();
     assert.equal(created.estado, 'PENDIENTE');
     assert.ok(created.fechaCreacion);
+    assert.equal(created.usuario.id, Number(reporteBase.usuarioId));
 
     const putBody = { titulo: 'Cambio', descripcion: 'Cambio desc', categoriaId: '3', barrio: 'Norte', direccion: 'Calle 9', prioridad: 'URGENTE' };
     res = await request('PUT', '/reportes/' + created.id, putBody);
@@ -140,29 +150,34 @@ test('Reportes: CRUD, filtros, asignar y rutas anidadas', async () => {
     assert.equal((await res.json()).prioridad, 'URGENTE');
     assert.equal((await request('PUT', '/reportes/' + created.id, {})).status, 400);
     assert.equal((await request('PUT', '/reportes/' + created.id, { ...putBody, prioridad: 'NOPE' })).status, 400);
+    assert.equal((await request('PUT', '/reportes/' + created.id, { ...putBody, categoriaId: '99999' })).status, 404);
     assert.equal((await request('PUT', '/reportes/99999', putBody)).status, 404);
 
     // PUT /asignar -> PENDIENTE pasa a ASIGNADO
     res = await request('PUT', '/reportes/' + created.id + '/asignar', { orgId: '1' });
     assert.equal(res.status, 200);
     const asignado = await res.json();
-    assert.equal(asignado.organizacionId, '1');
+    assert.equal(asignado.organizacion.id, 1);
     assert.equal(asignado.estado, 'ASIGNADO');
     assert.equal((await request('PUT', '/reportes/' + created.id + '/asignar', {})).status, 400);
+    assert.equal((await request('PUT', '/reportes/' + created.id + '/asignar', { orgId: '99999' })).status, 404);
     assert.equal((await request('PUT', '/reportes/99999/asignar', { orgId: '1' })).status, 404);
 
-    // Rutas anidadas
+    // Rutas anidadas (usuario y organizacion 1 son los sembrados por categorias/users/organizaciones)
     res = await request('GET', '/users/1/reportes');
     assert.equal(res.status, 200);
-    assert.ok((await res.json()).every((r) => r.usuarioId === '1'));
+    assert.ok((await res.json()).every((r) => r.usuario.id === 1));
     assert.equal((await request('GET', '/users/99999/reportes')).status, 404);
     res = await request('GET', '/organizaciones/1/reportes');
     assert.equal(res.status, 200);
-    assert.ok((await res.json()).every((r) => r.organizacionId === '1'));
+    assert.ok((await res.json()).every((r) => r.organizacion.id === 1));
     assert.equal((await request('GET', '/organizaciones/99999/reportes')).status, 404);
 
     assert.equal((await request('DELETE', '/reportes/' + created.id)).status, 200);
     assert.equal((await request('GET', '/reportes/' + created.id)).status, 404);
+
+    res = await request('GET', '/reportes');
+    assert.equal((await res.json()).length, initialCount);
   } finally {
     await app.close();
   }
@@ -207,6 +222,10 @@ test('Seguimientos: historial y cambio de estado', async () => {
 
     res = await request('GET', `/reportes/${rep.id}/seguimientos`);
     assert.equal((await res.json()).length, 2);
+
+    // Reportes ya persiste en Postgres: se borra el reporte de prueba para no
+    // dejar un registro de mas en cada corrida.
+    assert.equal((await request('DELETE', `/reportes/${rep.id}`)).status, 200);
   } finally {
     await app.close();
   }

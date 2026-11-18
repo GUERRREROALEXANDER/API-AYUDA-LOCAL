@@ -6,7 +6,7 @@ API para apoyar la atención de necesidades de la comunidad. Ciudadanos reportan
 
 ## Base de datos
 
-`Users`, `Organizaciones` y `Categorias` persisten en PostgreSQL con TypeORM (entidades en `entities/`). `Reportes` y `Seguimientos` siguen en arreglos en memoria mientras se completa su migración a TypeORM.
+`Users`, `Organizaciones`, `Categorias` y `Reportes` persisten en PostgreSQL con TypeORM (entidades en `entities/`). `Seguimientos` sigue en un arreglo en memoria mientras se completa su migración a TypeORM.
 
 ```powershell
 cp .env.example .env   # completar con los valores de docker-compose.yml
@@ -25,9 +25,9 @@ npm run start:dev
 ```
 
 Base URL: http://localhost:3000. Para ejecutar lo compilado: `npm run start:prod`.
-`Users`, `Organizaciones` y `Categorias` quedan guardados en Postgres: sus IDs son numéricos y los datos sobreviven a reinicios de la API (se siembran una sola vez).
-`Reportes` y `Seguimientos` siguen en arreglos privados de cada Service y vuelven a sus valores iniciales al reiniciar.
-Hay 12 ciudadanos, 8 organizaciones y 8 categorías iniciales (IDs autogenerados por Postgres, empiezan en 1), además de 4 reportes iniciales (IDs 1-4) con 2 seguimientos de ejemplo. Los registros son datos de demostración ficticios.
+`Users`, `Organizaciones`, `Categorias` y `Reportes` quedan guardados en Postgres: sus IDs son numéricos y los datos sobreviven a reinicios de la API (se siembran una sola vez). Un Reporte devuelve su `categoria`, `usuario` y `organizacion` como objetos completos (relaciones TypeORM), no solo el ID.
+`Seguimientos` sigue en un arreglo privado del Service y vuelve a sus valores iniciales al reiniciar.
+Hay 12 ciudadanos, 8 organizaciones, 8 categorías y 4 reportes iniciales (IDs autogenerados por Postgres, empiezan en 1), además de 2 seguimientos de ejemplo. Los registros son datos de demostración ficticios.
 
 ## Estructura
 
@@ -58,7 +58,7 @@ src/
     reportes.controller.ts
     reportes.service.ts
     reportes.dto.ts
-    reportes.model.ts
+    entities/reporte.entity.ts
   seguimientos/
     seguimientos.module.ts
     seguimientos.controller.ts
@@ -79,7 +79,8 @@ El Controller usa `@Controller`, `@Get`, `@Post`, `@Put`, `@Delete`, `@Body` y `
 Cada Service usa `@Injectable()` y tiene `findAll()`, `findById(id)`, `create(data)`, `update(id, data)` y `delete(id)`.
 ReportesService suma `findByEstado`, `findByCategoria`, `findByBarrio`, `findByPrioridad`, `findByUsuario`, `findByOrganizacion`, `asignar(id, orgId)` y `cambiarEstado(id, estado)`.
 SeguimientosService tiene `findByReporte(reporteId)` y `create(reporteId, dto)`; cada seguimiento guarda el estado anterior y cambia el reporte al estado nuevo.
-La lógica está en los Services. En Reportes y Seguimientos los arreglos privados describen los datos; en Users, Organizaciones y Categorias esa responsabilidad la tiene la entidad TypeORM, y el Service usa su `Repository` (`find`, `findOneBy`, `save`, `remove`) en vez de un arreglo. Los DTO validan las entradas en ambos casos.
+La lógica está en los Services. En Seguimientos el arreglo privado describe los datos; en Users, Organizaciones, Categorias y Reportes esa responsabilidad la tiene la entidad TypeORM, y el Service usa su `Repository` (`find`, `findOneBy`/`findOne`, `save`, `remove`) en vez de un arreglo. Los DTO validan las entradas en ambos casos.
+ReportesService además valida que `categoriaId`, `usuarioId` y `orgId` existan (`NotFoundException` si no) antes de guardar la relación, inyectando los repositorios de `CategoriaEntity`, `UserEntity` y `OrganizacionEntity` directamente (no los módulos completos, para no crear un ciclo con `UsersModule`/`OrganizacionesModule`, que ya importan `ReportesModule`).
 
 ## Endpoints
 
@@ -159,6 +160,7 @@ El ID lo asigna el Service: no debe enviarse en el body. No se aceptan propiedad
 ```
 
 Sin `prioridad` válida (`BAJA · MEDIA · ALTA · URGENTE`) la API devuelve 400. El `estado` inicial siempre es `PENDIENTE`.
+`categoriaId` y `usuarioId` deben existir: si no, la API devuelve 404 antes de guardar el reporte. La respuesta trae `categoria`, `usuario` y (si ya se asignó) `organizacion` como objetos completos, no solo su ID.
 
 ### PUT /reportes/:id/asignar
 
@@ -184,7 +186,7 @@ Ejemplos de lectura: `GET http://localhost:3000/users`, `GET http://localhost:30
 
 `npm run build` compila NestJS.
 `npm test` compila y prueba por HTTP el CRUD de los cinco módulos, filtros de reportes, asignar, seguimientos con cambio de estado, rutas anidadas, datos iniciales, errores 404 y validación 400. Utiliza un puerto temporal y no modifica la API del puerto 3000.
-Como Users, Organizaciones y Categorias ahora usan Postgres, `npm test` necesita `docker compose up -d` y el archivo `.env` configurados antes de correr.
+Como Users, Organizaciones, Categorias y Reportes ahora usan Postgres, `npm test` necesita `docker compose up -d` y el archivo `.env` configurados antes de correr.
 
 ## Referencia estudiada
 
