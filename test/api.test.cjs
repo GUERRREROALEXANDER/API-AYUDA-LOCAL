@@ -223,10 +223,22 @@ test('Seguimientos: historial y cambio de estado', async () => {
     assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '99999', nota: 'x', estadoNuevo: 'CERRADO' })).status, 404);
     assert.equal((await (await request('GET', `/reportes/${rep.id}`)).json()).estado, 'EN_PROCESO');
 
+    // Ciclo de vida: saltos y reaperturas de estados finales dan 409 y no dejan historial
+    assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x', estadoNuevo: 'PENDIENTE' })).status, 409);
+    assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x', estadoNuevo: 'CERRADO' })).status, 409);
+    assert.equal((await (await request('GET', `/reportes/${rep.id}`)).json()).estado, 'EN_PROCESO');
+
     res = await request('GET', `/reportes/${rep.id}/seguimientos`);
     const historial = await res.json();
     assert.equal(historial.length, 2);
     assert.equal(historial[0].autor.id, 1);
+
+    // Estado final: CERRADO no acepta mas cambios, ni siquiera repetir el estado
+    for (const estadoNuevo of ['RESUELTO', 'CERRADO']) {
+      assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x', estadoNuevo })).status, 201);
+    }
+    assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x', estadoNuevo: 'CERRADO' })).status, 409);
+    assert.equal((await request('POST', `/reportes/${rep.id}/seguimientos`, { autorId: '1', nota: 'x', estadoNuevo: 'EN_PROCESO' })).status, 409);
 
     // Reportes ya persiste en Postgres: se borra el reporte de prueba para no
     // dejar un registro de mas en cada corrida.
