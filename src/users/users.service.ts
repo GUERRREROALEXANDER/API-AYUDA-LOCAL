@@ -50,7 +50,7 @@ export class UsersService implements OnModuleInit {
     return this.usersRepository.save(this.usersRepository.create(data));
   }
 
-  async update(id: string, data: UpdateUserDto): Promise<UserEntity> {
+  async update(id: string, data: Partial<UpdateUserDto>): Promise<UserEntity> {
     const item = await this.findById(id);
     Object.assign(item, data);
     return this.usersRepository.save(item);

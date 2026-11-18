@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { IsEmail, IsString, Matches } from 'class-validator';
 
 // Los DTO validan el body antes de llamar al Service.
@@ -13,3 +14,5 @@ export class CreateUserDto {
 }
 // PUT exige todos los campos editables. El id lo administra el Service.
 export class UpdateUserDto extends CreateUserDto {}
+// PATCH acepta cualquier subconjunto de los campos editables.
+export class PatchUserDto extends PartialType(CreateUserDto) {}

@@ -46,7 +46,7 @@ export class OrganizacionesService implements OnModuleInit {
     return this.organizacionesRepository.save(this.organizacionesRepository.create(data));
   }
 
-  async update(id: string, data: UpdateOrganizacionDto): Promise<OrganizacionEntity> {
+  async update(id: string, data: Partial<UpdateOrganizacionDto>): Promise<OrganizacionEntity> {
     const item = await this.findById(id);
     Object.assign(item, data);
     return this.organizacionesRepository.save(item);
